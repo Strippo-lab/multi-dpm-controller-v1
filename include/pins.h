@@ -1,0 +1,1 @@
+#define MAX485_DE    4

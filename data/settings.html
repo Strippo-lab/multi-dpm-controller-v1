@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>DPM – Settings</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="nav">
+      <a class="btn" href="/index.html">Dashboard</a>
+      <a class="btn" href="/modbus.html">Modbus</a>
+      <a class="btn" href="/relays.html">Relays</a>
+      <a class="btn" href="/dpm.html">DPM Control</a>
+      <a id="nav-settings" class="btn" href="/settings.html">Settings</a>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="card">
+      <h2>Network / MQTT</h2>
+      <div class="grid cols-2">
+        <div class="kv">
+          <label>MQTT Host</label> <input id="mqtt_host" placeholder="192.168.1.10">
+          <label>MQTT Port</label> <input id="mqtt_port" type="number" min="1" max="65535" value="1883">
+          <label>User</label>      <input id="mqtt_user">
+          <label>Password</label>  <input id="mqtt_pass" type="password">
+          <label>Base Topic</label><input id="base_topic" placeholder="NewDPM">
+          <label>Device Host</label><input id="device_host" placeholder="TEST_DPM">
+        </div>
+        <div class="kv">
+          <label>Use DHCP</label>  <label class="toggle"><input id="dhcp" type="checkbox" checked> <span>Yes</span></label>
+          <label>Static IP</label> <input id="ip" placeholder="192.168.1.50">
+          <label>Gateway</label>   <input id="gw" placeholder="192.168.1.1">
+          <label>Mask</label>      <input id="mask" placeholder="255.255.255.0">
+          <label>DNS</label>       <input id="dns" placeholder="8.8.8.8">
+        </div>
+      </div>
+      <div class="row">
+        <button id="save" class="btn primary">Save</button>
+        <button id="reload" class="btn">Reload</button>
+      </div>
+      <div id="msg" class="small"></div>
+    </section>
+  </main>
+  <footer>© DPM UI</footer>
+
+  <script type="module">
+    import {getJSON, postJSON, setActiveNav, $, $all} from '/app.js';
+    setActiveNav('nav-settings');
+
+    async function load(){
+      const s = await getJSON('/api/settings'); // return current settings
+      $('#mqtt_host').value = s.mqtt_host || '';
+      $('#mqtt_port').value = s.mqtt_port ?? 1883;
+      $('#mqtt_user').value = s.mqtt_user || '';
+      $('#mqtt_pass').value = s.mqtt_pass || '';
+      $('#base_topic').value = s.base_topic || 'NewDPM';
+      $('#device_host').value = s.device_host || 'TEST_DPM';
+
+      $('#dhcp').checked = !!s.dhcp;
+      $('#ip').value   = s.ip || '';
+      $('#gw').value   = s.gw || '';
+      $('#mask').value = s.mask || '';
+      $('#dns').value  = s.dns || '';
+    }
+    $('#save').onclick = async()=>{
+      const body = {
+        mqtt_host:  $('#mqtt_host').value.trim(),
+        mqtt_port:  +$('#mqtt_port').value,
+        mqtt_user:  $('#mqtt_user').value,
+        mqtt_pass:  $('#mqtt_pass').value,
+        base_topic: $('#base_topic').value.trim(),
+        device_host:$('#device_host').value.trim(),
+        dhcp:       $('#dhcp').checked,
+        ip:   $('#ip').value.trim(),
+        gw:   $('#gw').value.trim(),
+        mask: $('#mask').value.trim(),
+        dns:  $('#dns').value.trim()
+      };
+      await postJSON('/api/settings', body);   // save to Preferences + (optionally) restart MQTT
+      $('#msg').textContent = 'Saved.';
+      setTimeout(()=>$('#msg').textContent='', 1500);
+    };
+    $('#reload').onclick = load;
+    load();
+  </script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>DPM – Modbus</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="nav">
+      <a class="btn" href="/index.html">Dashboard</a>
+      <a id="nav-modbus" class="btn" href="/modbus.html">Modbus</a>
+      <a class="btn" href="/relays.html">Relays</a>
+      <a class="btn" href="/dpm.html">DPM Control</a>
+      <a class="btn" href="/settings.html">Settings</a>
+    </div>
+    <div class="row">
+      <button id="btn-scan" class="btn">Start scan</button>
+      <button id="btn-stop" class="btn ghost">Stop</button>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="card">
+      <h2>Scan result</h2>
+      <div id="scan"></div>
+    </section>
+  </main>
+  <footer>© DPM UI</footer>
+
+  <script type="module">
+    import {getJSON, postJSON, setActiveNav, $} from '/app.js';
+    setActiveNav('nav-modbus');
+
+    async function refresh(){
+      try{
+        const s = await getJSON('/api/modbus/status'); // {found:[1,2,3], cfgForId:{1:0,2:0}, rows:6}
+        const found = (s && s.found) || [];
+        const rows = found.map(id => `<span class="badge">ID ${id}</span>`).join(' ');
+        $('#scan').innerHTML = found.length ? rows : '<span class="small">No devices found.</span>';
+      }catch(e){ $('#scan').innerHTML = '<span class="badge bad">No data</span>'; }
+    }
+    $('#btn-scan').onclick = async()=>{
+      await postJSON('/api/modbus/scan', {action:'start'});  // trigger init_modbus_async_begin()
+      refresh();
+    };
+    $('#btn-stop').onclick = async()=>{
+      await postJSON('/api/modbus/scan', {action:'stop'});   // (optional) add support if you like
+      refresh();
+    };
+
+    refresh();
+    setInterval(refresh, 1000);
+  </script>
+</body>
+</html>

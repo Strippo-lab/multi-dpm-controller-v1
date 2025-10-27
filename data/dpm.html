@@ -1,0 +1,77 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>DPM – Control</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="nav">
+      <a class="btn" href="/index.html">Dashboard</a>
+      <a class="btn" href="/modbus.html">Modbus</a>
+      <a class="btn" href="/relays.html">Relays</a>
+      <a id="nav-dpm" class="btn" href="/dpm.html">DPM Control</a>
+      <a class="btn" href="/settings.html">Settings</a>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="card">
+      <h2>Per-DPM settings</h2>
+      <div id="forms" class="grid cols-2"></div>
+      <div class="row">
+        <button id="apply" class="btn primary">Apply changes</button>
+      </div>
+    </section>
+  </main>
+  <footer>© DPM UI</footer>
+
+  <script type="module">
+    import {getJSON, postJSON, setActiveNav, $, $all} from '/app.js';
+    setActiveNav('nav-dpm');
+
+    let rows = 0;
+
+    function oneForm(id, arr){
+      const [state, dpm_state, volt_act, cur_act, temp_act, remain, volt_set, cur_set, idle_cur, last_ms, runtime] = arr;
+      return `
+      <div class="card">
+        <h2>DPM${id}</h2>
+        <div class="kv">
+          <label>Volt set (mV)</label> <input type="number" min="0" step="1" id="v_${id}" value="${volt_set||0}">
+          <label>Cur set (mA)</label>  <input type="number" min="0" step="1" id="i_${id}" value="${cur_set||0}">
+          <label>Idle current</label>  <input type="number" min="0" step="1" id="idle_${id}" value="${idle_cur||0}">
+          <label>Runtime (s)</label>   <input type="number" min="0" step="1" id="run_${id}" value="${runtime||0}">
+          <div></div><div class="small">Now: ${volt_act||0}mV / ${cur_act||0}mA • ${temp_act||0}°C • remain ${remain||0}s</div>
+        </div>
+      </div>`;
+    }
+
+    async function refresh(){
+      const s = await getJSON('/api/status');
+      const {ip, link, uuid, ...dpms} = s || {};
+      const keys = Object.keys(dpms).sort();
+      rows = keys.length;
+      $('#forms').innerHTML = keys.map((k,ix)=> oneForm(ix+1, dpms[k])).join('');
+    }
+
+    $('#apply').onclick = async()=>{
+      for(let id=1; id<=rows; id++){
+        const body = {
+          addr: id-1, // web 0-based → device 1..ROWS done on backend
+          volt_set: +$(`#v_${id}`).value,
+          cur_set:  +$(`#i_${id}`).value,
+          runtime:  +$(`#run_${id}`).value,
+          idle_cur: +$(`#idle_${id}`).value
+        };
+        await postJSON('/api/dpm', body); // backend maps to queue writes
+      }
+      await refresh();
+    };
+
+    refresh();
+  </script>
+</body>
+</html>

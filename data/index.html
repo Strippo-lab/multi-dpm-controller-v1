@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>DPM – Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="nav">
+      <a id="nav-home" class="btn" href="/index.html">Dashboard</a>
+      <a class="btn" href="/modbus.html">Modbus</a>
+      <a class="btn" href="/relays.html">Relays</a>
+      <a class="btn" href="/dpm.html">DPM Control</a>
+      <a class="btn" href="/settings.html">Settings</a>
+    </div>
+    <div class="small">Local UI</div>
+  </header>
+
+  <main class="grid">
+    <section class="card">
+      <h2>Status</h2>
+      <div id="net" class="row small"></div>
+      <div id="table"></div>
+    </section>
+  </main>
+
+  <footer>© Wilofa DPM UI</footer>
+
+  <script type="module">
+  import {getJSON, renderDPMTable, setActiveNav, $} from '/app.js';
+  setActiveNav('nav-home');
+
+  async function refresh(){
+    try{
+      const r = await fetch('/modbus/status.json', {cache:'no-store'});
+      const s = await r.json();   // <-- FIXED, parse JSON
+      const {ip, link, uuid, ...dpms} = s || {};
+
+      $('#net').innerHTML = `
+        <span class="badge ${link?'good':'bad'}">${link?'LINK UP':'LINK DOWN'}</span>
+        <span>IP: <code>${ip||'-'}</code></span>
+        <span>UUID: <code>${uuid||''}</code></span>`;
+
+      renderDPMTable($('#table'), dpms);
+    }catch(e){
+      $('#net').innerHTML = `<span class="badge bad">No status</span>`;
+      $('#table').innerHTML = '';
+    }
+  }
+
+  refresh();
+  setInterval(refresh, 1000);
+</script>
+</body>
+</html>
