@@ -196,3 +196,108 @@ Pull latest remote changes	git pull
 Tag version and push	git tag v1.0.0 && git push origin v1.0.0
 
 🎉 You’re Done!
+
+
+
+🎯 Goal
+
+You have two branches:
+
+main → your stable firmware
+
+dev → your active development
+
+You want to merge only certain parts (a few files or commits) from dev into main — not the whole branch.
+
+🧩 Option 1 — Merge only one or more specific files
+🔹 Step 1 — Checkout the branch you want to update
+git checkout main
+
+🔹 Step 2 — Pull the file(s) you want from dev
+git checkout dev -- src/mqtt_if.cpp
+
+
+✅ This takes only src/mqtt_if.cpp from the dev branch and places it into your main branch working directory.
+
+You can do this for multiple files:
+
+git checkout dev -- src/mqtt_if.cpp src/config.cpp include/mqtt_if.h
+
+🔹 Step 3 — Commit it
+git add .
+git commit -m "Merge mqtt_if.cpp from dev branch"
+git push
+
+
+Done ✅ — only those files are merged.
+
+🧠 Option 2 — Merge only specific commits (using cherry-pick)
+
+Let’s say you did multiple commits in dev, but only one (or two) should go to main.
+
+🔹 Step 1 — Switch to main
+git checkout main
+
+🔹 Step 2 — Find commit hash in dev
+git log dev --oneline
+
+
+Example output:
+
+a1b2c3d  Fix OTA MD5 verification
+e4f5g6h  Improve MQTT reconnect logic
+
+🔹 Step 3 — Cherry-pick the commit(s)
+git cherry-pick a1b2c3d
+
+
+You can even cherry-pick multiple commits:
+
+git cherry-pick a1b2c3d e4f5g6h
+
+
+If there are no conflicts → done ✅
+If conflicts appear, Git will tell you which files need manual resolution.
+
+🔹 Step 4 — Push updated main
+git push
+
+⚙️ Option 3 — Merge a folder subtree (partial project)
+
+If you have a big repo but want only one folder (like /lib/), you can do:
+
+git checkout dev -- lib/
+git add lib/
+git commit -m "Merge updated libraries from dev"
+git push
+
+🧼 Option 4 — Use interactive rebase (for advanced cleanup)
+
+If you want to merge multiple commits but squash or edit them before merging:
+
+git checkout dev
+git rebase -i main
+
+
+Then you can pick only what you need before merging normally.
+
+🧠 Summary Table
+What you need	Command	Result
+Merge one file	git checkout dev -- path/to/file	Only that file imported
+Merge one commit	git cherry-pick <commit>	One specific change imported
+Merge folder	git checkout dev -- folder/	Only that folder imported
+Clean up before merge	git rebase -i main	Choose commits manually
+💡 Tips
+
+Always commit or stash your local changes before using checkout or cherry-pick.
+
+You can test the merge on a temporary branch first:
+
+git checkout -b test-merge main
+git cherry-pick a1b2c3d
+
+
+Then review everything safely.
+
+Would you like me to make a small visual diagram showing how main, dev, and feature branches connect — with arrows showing cherry-pick and partial merge flow?
+It’s very helpful for visualizing how these commands work.
