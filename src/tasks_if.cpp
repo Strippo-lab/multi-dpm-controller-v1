@@ -11,7 +11,7 @@
 // --------------------------------------------------------------------
 
 // -------------------------------------------------------------------
-// Periods (tune as you like)
+// [SECTION TASK FREERTOS] Periods (tune as you like)
 // -------------------------------------------------------------------
 #define HTTP_PERIOD_MS        50
 #define ETH_PERIOD_MS        100
@@ -28,13 +28,13 @@ extern HardwareSerial modbus;
 extern ModbusMaster   DPM_1;
 
 // -------------------------------------------------------------------
-// Globals
+// [SECTION TASK FREERTOS] Globals
 // -------------------------------------------------------------------
 QueueHandle_t qModbusCmd;
 SemaphoreHandle_t mModbus;
 
 // -------------------------------------------------------------------
-// HTTP task
+// [SECTION TASK FREERTOS] HTTP task
 // -------------------------------------------------------------------
 static void httpTask(void*) {
   TickType_t last = xTaskGetTickCount();
@@ -46,7 +46,7 @@ static void httpTask(void*) {
 }
 
 // -------------------------------------------------------------------
-// Ethernet task
+// [SECTION TASK FREERTOS] Ethernet task
 // -------------------------------------------------------------------
 static void ethTask(void*) {
   TickType_t last = xTaskGetTickCount();
@@ -58,7 +58,7 @@ static void ethTask(void*) {
 }
 
 // -------------------------------------------------------------------
-// Status publisher task (enqueue request every 1s)
+// [SECTION TASK FREERTOS] Status publisher task (enqueue request every 1s)
 // -------------------------------------------------------------------
 static void statusTask(void*) {
   TickType_t last = xTaskGetTickCount();
@@ -69,7 +69,7 @@ static void statusTask(void*) {
 }
 
 // -------------------------------------------------------------------
-// Influx publisher task (enqueue request every 5s)
+// [SECTION TASK FREERTOS] Influx publisher task (enqueue request every 5s)
 // -------------------------------------------------------------------
 static void influxTask(void*) {
   TickType_t last = xTaskGetTickCount();
@@ -80,7 +80,7 @@ static void influxTask(void*) {
 }
 
 // -------------------------------------------------------------------
-// Modbus task
+// [SECTION TASK FREERTOS] Modbus task
 // -------------------------------------------------------------------
 static void modbusTask(void*) {
   init_modbus_async_begin();      // non-blocking scanner
@@ -127,7 +127,7 @@ static void modbusTask(void*) {
 }
 
 // -------------------------------------------------------------------
-// State machine task
+// [SECTION TASK FREERTOS] State machine task
 // -------------------------------------------------------------------
 static void stateTask(void*) {
   TickType_t last = xTaskGetTickCount();
@@ -139,7 +139,7 @@ static void stateTask(void*) {
 }
 
 // -------------------------------------------------------------------
-// Watchdog feed task
+// [SECTION TASK FREERTOS] Watchdog feed task
 // -------------------------------------------------------------------
 static void watchdogTask(void*) {
   TickType_t last = xTaskGetTickCount();
@@ -150,7 +150,7 @@ static void watchdogTask(void*) {
 }
 
 // -------------------------------------------------------------------
-// Start all system tasks
+// [SECTION TASK FREERTOS] Start all system tasks
 // -------------------------------------------------------------------
 void start_system_tasks() {
   qModbusCmd = xQueueCreate(16, sizeof(ModbusCmd));
