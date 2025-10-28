@@ -54,6 +54,7 @@ struct DPMState
   int volt_set = 300;
   int cur_set = 300;
   int idle_cur = 300;
+  int start_volt = 300;
   long unsigned int last_ms = 0; // last update timestamp
   long unsigned int runtime = 0;
   long unsigned int waitTimer = 0;

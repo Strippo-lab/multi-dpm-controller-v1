@@ -12,6 +12,8 @@ void initStatemachine()
 {
   for (int id = 1; id <= ROWS; id++)
   {
+    DBG_INFO("Set state= %d DPM= %d\n", dpms[id].state, id);
+
     dpms[id].state = DPMState::Status::INIT; // ✅ updated
   }
   DBG_INFO("[CFG] ROWS=%d DPMS_SIZE=%d (dpms is 1-based)\n", ROWS, DPMS_SIZE);
@@ -182,6 +184,7 @@ void handleInit(int id)
       safeWriteCurrent(id, 300) &&
       safeWriteState(id, true))
   {
+    dpms[id].start_volt = 200; // store start voltage
     dpms[id].state = DPMState::Status::WAIT_CURRENT; // ✅ updated
   }
   else
@@ -258,6 +261,7 @@ void handleRun(int id)
     {
       mqtt_publish_event("run_stop", dpms[id].user, id, "INFO", "Process stopped");
       safeWriteCurrent(id, dpms[id].idle_cur);
+      safeWriteVoltage(id, dpms[id].start_volt);
       dpms[id].state = DPMState::Status::WAIT_REMOVE; // ✅ updated
       dpms[id].remain_time = 0;
       // saveEnergyTotals();
@@ -282,6 +286,7 @@ void handleRun(int id)
   {
     mqtt_publish_event("run_stop", dpms[id].user, id, "INFO", "Process stopped");
     safeWriteCurrent(id, dpms[id].idle_cur);
+    safeWriteVoltage(id, dpms[id].start_volt);
     dpms[id].state = DPMState::Status::WAIT_REMOVE; // ✅ updated
     dpms[id].remain_time = 0;
     // saveEnergyTotals();
@@ -320,6 +325,7 @@ void handleCheckEnergy(int id)
              id, dpms[id].energy_temp);
     mqtt_publish_event("energy_reached_late", dpms[id].user, id, "INFO", "Energy target reached (late)");
     safeWriteCurrent(id, dpms[id].idle_cur);
+    safeWriteVoltage(id, dpms[id].start_volt);
     dpms[id].state = DPMState::Status::WAIT_REMOVE;
     dpms[id].remain_time = 0;
     // saveEnergyTotals();
@@ -334,6 +340,7 @@ void handleCheckEnergy(int id)
              id, dpms[id].energy_temp, dpms[id].energy_target);
     mqtt_publish_event("energy_timeout", dpms[id].user, id, "", "Energy timeout reached");
     safeWriteCurrent(id, dpms[id].idle_cur);
+    safeWriteVoltage(id, dpms[id].start_volt);
     dpms[id].state = DPMState::Status::WAIT_REMOVE;
     // saveEnergyTotals();
   }
