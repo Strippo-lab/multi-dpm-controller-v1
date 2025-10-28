@@ -183,8 +183,7 @@ void handleInit(int id)
   if (safeWriteVoltage(id, 300) &&
       safeWriteCurrent(id, 300) &&
       safeWriteState(id, true))
-  {
-    dpms[id].start_volt = 200; // store start voltage
+  {    
     dpms[id].state = DPMState::Status::WAIT_CURRENT; // ✅ updated
   }
   else

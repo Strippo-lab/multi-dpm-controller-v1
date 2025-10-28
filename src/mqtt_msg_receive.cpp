@@ -336,7 +336,7 @@ static bool handle_settings(const char *topic, byte *payload, unsigned int lengt
     const int cur_set = ja_get_i(data, 2, -1);
     const int runtime = ja_get_i(data, 3, -1);
     const int idle_cur = ja_get_i(data, 4, -1);
-    const int percent = ja_get_i(data, 5, -1);
+    const int start_volt = ja_get_i(data, 5, -1);
 
     if (addr < 0 || addr >= ROWS)
         return false;
@@ -381,8 +381,8 @@ static bool handle_settings(const char *topic, byte *payload, unsigned int lengt
         dpms[dpmi].runtime = runtime;
     if (idle_cur >= 0)
         dpms[dpmi].idle_cur = idle_cur;
-    if (percent >= 0)
-        dpms[dpmi].percent = percent;
+    if (start_volt >= 0)
+        dpms[dpmi].start_volt = start_volt;
 
     saveConfig();
     mqtt_publish_event("Change DPM Settings", dpms[dpmi].user, dpmi, "User Change", "Settings Changed");

@@ -225,7 +225,7 @@ bool mqtt_publish_influx()
 
     for (int id = 1; id <= ROWS; id++)
     {
-        if (dpms[id].valid && dpms[id].state == DPMState::Status::RUN && dpms[id].cur_act > 0)
+        if (dpms[id].valid && dpms[id].state == DPMState::Status::RUN)
         { // ✅ updated
 
             // Build one line of Influx line protocol
