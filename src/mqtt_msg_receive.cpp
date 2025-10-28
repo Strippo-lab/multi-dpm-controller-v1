@@ -10,14 +10,11 @@
 // -------------------------------------------------------------------
 // External functions defined in other modules
 // -------------------------------------------------------------------
-extern bool topic_is_my_settings(const char *topic);
-extern bool mqtt_publish_event(const char *type, int user, int dpm,
-                               const char *state, const char *message);
 extern void saveConfig();
-extern uint8_t dpm_write_current(uint8_t nr, uint16_t c);
-extern uint8_t dpm_write_voltage(uint8_t nr, uint16_t v);
-extern uint8_t dpm_write_state(uint8_t nr, bool s);
 
+// ===========================================================
+// [SECTION] Helper: Jason get Int from JsonArray with default
+// ===========================================================
 int ja_get_i(const JsonArray &a, size_t i, int defVal)
 {
     return (!a.isNull() && i < a.size() && a[i].is<int>()) ? a[i].as<int>() : defVal;
@@ -130,7 +127,7 @@ void onMqttMessage(char *topic, byte *payload, unsigned int length)
     }
 
     // --- 2️⃣ Try to parse JSON ---
-    DynamicJsonDocument doc(512);
+    DynamicJsonDocument doc(1024);
     deserializeJson(doc, payload, length); // tolerant parse
 
     
@@ -150,9 +147,7 @@ void onMqttMessage(char *topic, byte *payload, unsigned int length)
 // ===========================================================
 
 static bool handle_user(const char *topic, byte *payload, unsigned int length, DynamicJsonDocument &doc)
-{
-    if (!strstr(topic, "/cmd/user/"))
-        return false;
+{   
     int id = doc["id"] | extract_dpm_id_from_topic(topic);
     if (id < 1 || id > ROWS)
         return true;
@@ -171,7 +166,7 @@ static bool handle_user(const char *topic, byte *payload, unsigned int length, D
     if (val > 0)
         dpms[id].user = val;
     saveConfig();
-    mqtt_publish_event("Benutzer", dpms[id].user, id, "User Change", "Neuer Benutzer");
+    mqtt_publish_event("User", dpms[id].user, id, "User Change", "User changed");
     DBG_INFO("[MQTT] DPM%d user set to: %d\n", id, dpms[id].user);
     return true;
 }
@@ -180,9 +175,7 @@ static bool handle_user(const char *topic, byte *payload, unsigned int length, D
 // ===========================================================
 static bool handle_reset(const char *topic, byte *payload,
                          unsigned int length, DynamicJsonDocument &doc)
-{
-    if (!strstr(topic, "/cmd/reset"))
-        return false;
+{ 
 
     int id = doc["id"] | extract_dpm_id_from_topic(topic);
     if (id < 1 || id > ROWS)
@@ -221,9 +214,7 @@ static bool handle_reset(const char *topic, byte *payload,
 // [SECTION MQTT Receive] Change Curve Mode HANDLER
 // ===========================================================
 static bool handle_mode(const char *topic, byte *payload, unsigned int length, DynamicJsonDocument &doc)
-{
-    if (!strstr(topic, "/cmd/mode"))
-        return false;
+{    
     int id = doc["id"] | extract_dpm_id_from_topic(topic);
     if (id < 1 || id > ROWS)
         return true;
@@ -246,9 +237,7 @@ static bool handle_mode(const char *topic, byte *payload, unsigned int length, D
 // [SECTION MQTT Receive] Change Current Ramp/Curve HANDLER
 // ===========================================================
 static bool handle_curve(const char *topic, byte *payload, unsigned int length, DynamicJsonDocument &doc)
-{
-    if (!strstr(topic, "/cmd/curve"))
-        return false;
+{    
     int id = doc["id"] | extract_dpm_id_from_topic(topic);
     if (id < 1 || id > ROWS)
         return true;
@@ -287,9 +276,7 @@ static bool handle_curve(const char *topic, byte *payload, unsigned int length, 
 // [SECTION MQTT Receive] Change Line (Galvanic id) HANDLER
 // ===========================================================
 static bool handle_line(const char *topic, byte *payload, unsigned int length, DynamicJsonDocument &doc)
-{
-    if (!strstr(topic, "/cmd/line/"))
-        return false;
+{   
     int id = doc["id"] | extract_dpm_id_from_topic(topic);
     if (id < 1 || id > ROWS)
         return true;
@@ -312,9 +299,7 @@ static bool handle_line(const char *topic, byte *payload, unsigned int length, D
 // [SECTION MQTT Receive] Set (Sub) Topic HANDLER  DPM_Control/SubTopic
 // ====================================================================
 static bool handle_topic(const char *topic, byte *payload, unsigned int length, DynamicJsonDocument &doc)
-{
-    if (!strstr(topic, "/cmd/Set_Topic"))
-        return false;
+{    
     String newAlias = doc["Topic"] | "";
     if (newAlias.isEmpty())
     {
@@ -383,14 +368,14 @@ static bool handle_settings(const char *topic, byte *payload, unsigned int lengt
     logChange("idle_cur", dpms[dpmi].idle_cur, idle_cur);
 
     // --- Apply new settings ---
-    if (volt_set >= 0 && volt_set <= 20000)//mV
+    if (volt_set >= 0 && volt_set <= 2000)//Radix point 2 (20Volt max)
         (void)dpm_write_voltage((uint8_t)dpmi, (uint16_t)volt_set);
-    if (cur_set >= 0 && cur_set <= 20000)//mA
+    if (cur_set >= 0 && cur_set <= 20000)//Radix point 3 (20Amp max)
         (void)dpm_write_current((uint8_t)dpmi, (uint16_t)cur_set);
     (void)dpm_write_state((uint8_t)dpmi, true);
-    if (volt_set >= 0 && volt_set <= 20000)//mV
+    if (volt_set >= 0 && volt_set <= 2000)//Radix point 2(20Volt max)
         dpms[dpmi].volt_set = volt_set;
-    if (cur_set >= 0 && cur_set <= 20000)//mA
+    if (cur_set >= 0 && cur_set <= 20000)//Radix point 3 (20Amp max)
         dpms[dpmi].cur_set = cur_set;
     if (runtime >= 0)
         dpms[dpmi].runtime = runtime;
@@ -400,17 +385,14 @@ static bool handle_settings(const char *topic, byte *payload, unsigned int lengt
         dpms[dpmi].percent = percent;
 
     saveConfig();
-    mqtt_publish_event("Change DPM Ssettings", dpms[dpmi].user, dpmi, "User Change", "Settings Changed");
+    mqtt_publish_event("Change DPM Settings", dpms[dpmi].user, dpmi, "User Change", "Settings Changed");
     return true;
 }
 // ===============================================================
 // [SECTION MQTT Receive] OTA firmware update
 // ===============================================================
 static bool handle_ota(const char *topic, byte *payload, unsigned int length, DynamicJsonDocument &doc)
-{
-    if (!strstr(topic, "/cmd/ota"))
-        return false;
-
+{   
     DBG_INFO("[MQTT] OTA command received on topic: %s\n", topic);
 
     // Accept both top-level or nested "ota"
