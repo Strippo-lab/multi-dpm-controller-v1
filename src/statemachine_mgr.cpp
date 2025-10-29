@@ -13,7 +13,6 @@ void initStatemachine()
   for (int id = 1; id <= ROWS; id++)
   {
     DBG_INFO("Set state= %d DPM= %d\n", dpms[id].state, id);
-
     dpms[id].state = DPMState::Status::INIT; // ✅ updated
   }
   DBG_INFO("[CFG] ROWS=%d DPMS_SIZE=%d (dpms is 1-based)\n", ROWS, DPMS_SIZE);
@@ -52,6 +51,41 @@ void dpm_calc_target_energy(int id)
   dpms[id].energy_target = volt * curr * dpms[id].runtime; // Joules
   DBG_INFO("[CFG] DPM%d energy_target=%.2f J (%.2f V × %.2f A × %lus)\n",
            id, dpms[id].energy_target, volt, curr, dpms[id].runtime);
+}
+// =====================================================================
+// [SECTION ENERGY] Calculate Energy
+// =====================================================================
+void dpm_update_energy(int id)
+{
+  unsigned long now = millis();
+  if (dpms[id].last_energy_ms == 0)
+  {
+    dpms[id].last_energy_ms = now;
+    return;
+  }
+
+  unsigned long dt = now - dpms[id].last_energy_ms;
+  dpms[id].last_energy_ms = now;
+
+  float volt = dpms[id].volt_act / 1000.0f;
+  float curr = dpms[id].cur_act / 1000.0f;
+  float power = volt * curr; // power in Watts
+
+  // double joules = power * (dt / 1000.0);
+  double joules = power * (dt / 1000.0); // energy in Joules
+  dpms[id].energy_temp += joules  / 3600.0;// energy in Wh
+  dpms[id].energy_total += joules / 3600.0;// energy in Wh
+  dpms[id].energy_anode += joules / 3600.0;// energy in Wh
+  // Also keep convenient Wh counters
+
+  // --- Service alert ---
+  if (dpms[id].energy_anode > dpms[id].anode_threshold)
+  {
+    // char msgText[128];
+    // snprintf(msgText, sizeof(msgText),"Service threshold reached (%.0f J total energy)", dpms[id].energy_anode);
+    // mqtt_publish_event("service_due", 0, id, "Alert", msgText);
+    dpms[id].anode_threshold += 100000.0; // avoid repeated spam (step up)
+  }
 }
 // =====================================================================
 // [SECTION STATE] Ramp up Current or Pulse mode processing (PWM-like)
@@ -102,42 +136,6 @@ void dpm_update_curve(int id)
 
   default:
     break;
-  }
-}
-
-// =====================================================================
-// [SECTION ENERGY] Calculate Energy
-// =====================================================================
-void dpm_update_energy(int id)
-{
-  unsigned long now = millis();
-  if (dpms[id].last_energy_ms == 0)
-  {
-    dpms[id].last_energy_ms = now;
-    return;
-  }
-
-  unsigned long dt = now - dpms[id].last_energy_ms;
-  dpms[id].last_energy_ms = now;
-
-  float volt = dpms[id].volt_act / 1000.0f;
-  float curr = dpms[id].cur_act / 1000.0f;
-  float power = volt * curr;
-
-  // double joules = power * (dt / 1000.0);
-  double joules = power * (dt / 1000.0);
-  dpms[id].energy_temp += joules;
-  dpms[id].energy_total += joules / 3600000.0;
-  dpms[id].energy_anode += joules / 3600000.0;
-  // Also keep convenient kWh counters
-
-  // --- Service alert ---
-  if (dpms[id].energy_anode > dpms[id].anode_threshold)
-  {
-    // char msgText[128];
-    // snprintf(msgText, sizeof(msgText),"Service threshold reached (%.0f J total energy)", dpms[id].energy_anode);
-    // mqtt_publish_event("service_due", 0, id, "Alert", msgText);
-    dpms[id].anode_threshold += 100000.0; // avoid repeated spam (step up)
   }
 }
 

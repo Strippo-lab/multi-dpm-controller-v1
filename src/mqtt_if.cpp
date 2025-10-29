@@ -218,6 +218,7 @@ bool mqtt_publish_influx()
 
     if (!mqtt_connected())
         return false;
+        
 
     static String payload;
     payload.reserve(1024);
